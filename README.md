@@ -42,7 +42,7 @@ REST API for managing a physiotherapy clinic, built with **Laravel 12** and **La
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd fisio_copia
+cd <directory>
 
 # Install dependencies, copy .env, generate the key, migrate and build assets
 composer setup
