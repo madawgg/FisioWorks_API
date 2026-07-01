@@ -4,14 +4,26 @@ REST API for managing a physiotherapy clinic, built with **Laravel 12** and **La
 
 ## Table of contents
 
+- [About the project](#about-the-project)
 - [Tech stack](#tech-stack)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Running the app](#running-the-app)
 - [Authentication & roles](#authentication--roles)
+- [Demo mode](#demo-mode-read-only)
 - [Main endpoints](#main-endpoints)
 - [Data model](#data-model)
+
+## About the project
+
+FisioWorks started as an **end-of-course final project**, but it was never meant to be a throwaway exercise: it was designed around the **real needs of a small physiotherapy clinic**. The requirements were gathered directly in conversation with the clinic's owner, and the application was tailored to how the clinic actually operates day to day.
+
+The system is **in production**, running on the client's own server (which can't be named here for privacy reasons).
+
+The project is deliberately split into a separate **API** (this repository) and **[frontend](https://github.com/madawgg/fisioWorks_front)**. This separation is by design: it keeps the backend independent so the same API can power additional clients in the future — for example a **mobile app** or a **desktop application** — without rewriting the business logic.
+
+> ⚠️ **Note:** This public repository is **demonstrative only** and does **not** reflect the current state of the production code. It has been intentionally simplified to protect the security of the live system and the client's data. Treat it as a portfolio showcase, not the deployed source.
 
 ## Tech stack
 
@@ -42,7 +54,7 @@ REST API for managing a physiotherapy clinic, built with **Laravel 12** and **La
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd <directory>
+cd fisio_copia
 
 # Install dependencies, copy .env, generate the key, migrate and build assets
 composer setup
@@ -102,6 +114,41 @@ Available roles, enforced by middleware:
 
 A user can hold several roles at once. On registration, a user is automatically created as a **patient**.
 
+## Demo mode (read-only)
+
+The API ships with a **read-only demo mode** so anyone can explore the whole system without registering or being able to modify data — ideal for a "Try the demo" button on the frontend.
+
+**How it works**
+
+1. `POST /demo-login` logs into a pre-seeded demo account (admin role, so it can read everything) and returns a Sanctum token issued with the **`demo`** ability — no credentials required.
+2. The `DemoReadOnly` middleware (aliased `demo.readonly`, applied to the whole authenticated group) allows safe methods (`GET`/`HEAD`/`OPTIONS`) and `logout`, but rejects any write (`POST`/`PUT`/`PATCH`/`DELETE`) with a `403`:
+
+```json
+{ "status": "error", "message": "Modo demo: solo lectura. Esta acción está deshabilitada." }
+```
+
+Regular tokens are issued with the `*` ability and are never affected — only the demo token carries the literal `demo` ability that the middleware checks for. The data is therefore protected at the API level, regardless of what the client does.
+
+**Hardening against abuse**
+
+- The demo token is **short-lived** (expires in 10 minutes).
+- `POST /demo-login` is **rate-limited** to 5 requests/minute per IP (named limiter in `AppServiceProvider`), and the whole API to 120/minute per IP, to prevent mass token creation / DoS.
+- Expired tokens are cleaned up daily via `sanctum:prune-expired` (scheduled in `routes/console.php`; requires the scheduler cron in production).
+
+**Setup**
+
+The demo account is created by `DemoSeeder` (`demo@fisio.test`), run automatically by `php artisan db:seed`, or on its own:
+
+```bash
+php artisan db:seed --class=DemoSeeder
+```
+
+| Component | Location |
+|-----------|----------|
+| Endpoint  | `POST /demo-login` → `UserController::demoLogin` |
+| Middleware| `app/Http/Middleware/DemoReadOnly.php` |
+| Seeder    | `database/seeders/DemoSeeder.php` |
+
 ## Main endpoints
 
 > Base prefix: `/api`
@@ -112,6 +159,7 @@ A user can hold several roles at once. On registration, a user is automatically 
 |--------|---------------|--------------------------------------------------------|
 | POST   | `/login`      | Logs in and returns the access token                   |
 | POST   | `/register`   | Registers a user (created as a patient)                |
+| POST   | `/demo-login` | Logs into the read-only demo account (no credentials)  |
 | POST   | `/logout`     | Logs out (revokes the current token)                   |
 
 **Example — Login**
@@ -249,5 +297,7 @@ Main entities and their relationships:
 - **Bono** — voucher template: `name`, `price`, `sessions`, `session_duration`.
 - **PatientBono** — voucher assigned to a patient: `sessions_total`, `sessions_used`, `sessions_remaining`, `purchase_date`, `expiration_date`.
 - **MedicalHistory** — clinical notes linking a patient and a therapist.
+
+---
 
 > Built with Laravel. Configure your `.env` (database, mail, etc.) before deploying to production.

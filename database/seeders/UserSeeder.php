@@ -48,6 +48,8 @@ class UserSeeder extends Seeder
         foreach ($users as $user) {
             User::create($user);
         };
-       //User::factory(300)->create();
+
+        // Usuarios de relleno para la demo (paginación, listados poblados).
+        User::factory(50)->create();
     }
 }

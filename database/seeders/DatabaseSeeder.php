@@ -12,10 +12,11 @@ use Database\Seeders\UserSeeder;
 use Database\Seeders\TherapistSeeder;
 use Database\Seeders\TreatmentSeeder;
 use Database\Seeders\SpecialtyTherapistSeeder;
-use Database\Seeders\TherapistTreatmentSeeder;
 use Database\Seeders\AdminSeeder;
 use Database\Seeders\PatientSeeder;
 use Database\Seeders\BonoSeeder;
+use Database\Seeders\DemoSeeder;
+use Database\Seeders\PatientActivitySeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -33,7 +34,9 @@ class DatabaseSeeder extends Seeder
             TreatmentSeeder::class,
             SpecialtyTherapistSeeder::class,
             AdminSeeder::class,
-            BonoSeeder::class
-        ]);        
+            BonoSeeder::class,
+            DemoSeeder::class,
+            PatientActivitySeeder::class,
+        ]);
     }
 }

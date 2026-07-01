@@ -170,7 +170,7 @@ class PatientBonoController
      */
     public function useSession(Request $request, $patientBonoId)
     {
-       $patientbono = PatientBono::useSession($patientBonoId);
+       $patientBono = PatientBono::useSession($patientBonoId);
 
         return response()->json([
             'status' => 'success',

@@ -104,8 +104,10 @@ class UserController
         ]);
         
         try {
-          
-            $validated['birthdate'] = Carbon::parse($validated['birthdate'])->format('Y-m-d');
+
+            if (isset($validated['birthdate'])) {
+                $validated['birthdate'] = Carbon::parse($validated['birthdate'])->format('Y-m-d');
+            }
             $user->update($validated);
 
             return response()->json([
@@ -147,7 +149,9 @@ class UserController
             $validated['password'] = bcrypt($validated['password']);
         }
 
-        $validated['birthdate'] = Carbon::parse($validated['birthdate'])->format('Y-m-d');
+        if (isset($validated['birthdate'])) {
+            $validated['birthdate'] = Carbon::parse($validated['birthdate'])->format('Y-m-d');
+        }
         $user->update($validated);
 
         return response()->json([
@@ -254,7 +258,9 @@ class UserController
         }
 
         try {
-            $token = $user->createToken('token_api')->plainTextToken;
+            // Token de login con caducidad de 8 h (por token, para no afectar
+            // al token demo de 10 min que se emite en demoLogin()).
+            $token = $user->createToken('token_api', ['*'], now()->addHours(8))->plainTextToken;
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -262,6 +268,34 @@ class UserController
         return response()->json([
             'user' => $user,
             'token' => $token,
+        ]);
+    }
+
+    /**
+     * Inicia sesión en la cuenta demo (solo lectura).
+     *
+     * El token se emite con la ability 'demo', que el middleware DemoReadOnly
+     * usa para bloquear cualquier operación de escritura. Pensado para un botón
+     * "Probar demo" en el frontend: el visitante explora todo el sistema sin
+     * poder modificar datos ni necesitar registrarse.
+     */
+    public function demoLogin()
+    {
+        $user = User::where('email', 'demo@fisio.test')->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'La cuenta demo no está disponible. Ejecuta los seeders (php artisan db:seed --class=DemoSeeder).',
+            ], 404);
+        }
+
+        // Token de solo lectura y de vida corta (10 min) para limitar el abuso.
+        $token = $user->createToken('demo-token', ['demo'], now()->addMinutes(10))->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+            'demo' => true,
         ]);
     }
 

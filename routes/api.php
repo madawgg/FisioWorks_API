@@ -24,6 +24,9 @@ use App\Http\Controllers\Api\MedicalHistoryController;
 
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/register', [UserController::class, 'register']);
+// Limitado a 5 intentos por minuto y por IP (limiter 'demo-login' en AppServiceProvider)
+// para evitar la creación masiva de tokens.
+Route::post('/demo-login', [UserController::class, 'demoLogin'])->middleware('throttle:demo-login');
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +34,7 @@ Route::post('/register', [UserController::class, 'register']);
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'demo.readonly'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | PERFIL DE USUARIO (CUALQUIER USUARIO AUTENTICADO)
